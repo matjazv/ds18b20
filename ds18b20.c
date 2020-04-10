@@ -60,35 +60,29 @@ static uint8_t CRC8(const uint8_t *addr, uint8_t len)
   return crc;
 }
 
-static uint8_t initialization_sequence(void)
+static bool initialization_sequence(void)
 {
-  uint8_t sensorPresence = 0;
-
   gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
   gpio_set_level(DQ_GPIO, 0);
 
-  wait_us(500);
+  wait_us(480);
 
   gpio_set_level(DQ_GPIO, 1);
   gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
 
-  wait_us(45);
+  wait_us(60);
 
-  if(gpio_get_level(DQ_GPIO) == 0) {
-    sensorPresence = 1;
-  } else {
-    sensorPresence = 0;
+  if(gpio_get_level(DQ_GPIO) != 0) {
+    return false;
   }
 
-  wait_us(500);
+  wait_us(420);
 
   if(gpio_get_level(DQ_GPIO) == 1) {
-      sensorPresence = 1;
-  } else {
-      sensorPresence = 0;
+      return true;
   }
 
-  return sensorPresence;
+  return false;
 }
 
 static void write_bit(uint8_t bit)
@@ -96,13 +90,13 @@ static void write_bit(uint8_t bit)
   gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
   gpio_set_level(DQ_GPIO, 0);
 
-  wait_us(1);
+  wait_us(10);
 
   if (bit == 1) {
     gpio_set_level(DQ_GPIO, 1);
   }
 
-  wait_us(70);
+  wait_us(50);
 
   gpio_set_level(DQ_GPIO, 1);
 }
@@ -118,11 +112,13 @@ static uint8_t read_bit(void)
 
   gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
 
-  wait_us(15);
+  wait_us(12);
 
   if (gpio_get_level(DQ_GPIO) == 1) {
     bit = 1;
   }
+
+  wait_us(47);
 
   return bit;
 }
@@ -166,7 +162,9 @@ bool ds18b20_read_ROM(uint8_t *data)
       return false;
   }
 
-  initialization_sequence();
+  if (initialization_sequence() != true) {
+      return false;
+  }
 
   write_byte(READ_ROM_COMMAND);
 
