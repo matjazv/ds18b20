@@ -11,5 +11,7 @@
 
 void ds18b20_init(uint8_t GPIO);
 bool ds18b20_read_ROM(uint8_t *data);
+bool ds18b20_match_ROM(uint8_t *ROMData);
+bool ds18b20_skip_ROM(void);
 
 #endif /* DS18B20_H_INCLUDED */

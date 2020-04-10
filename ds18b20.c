@@ -26,6 +26,13 @@
 #define SEARCH_ROM_COMMAND      0xF0
 #define ALARM_SEARCH_COMMAND    0xEC
 
+#define WRITE_SCRATCHPAD_COMMAND  0x4E
+#define READ_SCRATCHPAD_COMMAND   0xBE
+#define COPY_SCRATCHPAD_COMMAND   0x48
+#define CONVERT_TEMP_COMMAND      0x44
+#define RECALL_E2_COMMAND         0xB8
+#define READ_POWER_SUPLY_COMMAND  0xB4
+
 static const char *TAG = "ds18b20";
 
 gpio_num_t DQ_GPIO;
@@ -58,31 +65,6 @@ static uint8_t CRC8(const uint8_t *addr, uint8_t len)
   }
 
   return crc;
-}
-
-static bool initialization_sequence(void)
-{
-  gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
-  gpio_set_level(DQ_GPIO, 0);
-
-  wait_us(480);
-
-  gpio_set_level(DQ_GPIO, 1);
-  gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
-
-  wait_us(60);
-
-  if(gpio_get_level(DQ_GPIO) != 0) {
-    return false;
-  }
-
-  wait_us(420);
-
-  if(gpio_get_level(DQ_GPIO) == 1) {
-      return true;
-  }
-
-  return false;
 }
 
 static void write_bit(uint8_t bit)
@@ -150,20 +132,35 @@ static uint8_t read_byte(void)
   return data;
 }
 
-void ds18b20_init(uint8_t GPIO)
+static bool initialization_sequence(void)
 {
-    DQ_GPIO = GPIO;
-    gpio_pad_select_gpio(DQ_GPIO);
-}
+  gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
+  gpio_set_level(DQ_GPIO, 0);
 
-bool ds18b20_read_ROM(uint8_t *data)
-{
-  if (data == NULL) {
-      return false;
+  wait_us(480);
+
+  gpio_set_level(DQ_GPIO, 1);
+  gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
+
+  wait_us(60);
+
+  if(gpio_get_level(DQ_GPIO) != 0) {
+    return false;
   }
 
-  if (initialization_sequence() != true) {
-      return false;
+  wait_us(420);
+
+  if(gpio_get_level(DQ_GPIO) == 1) {
+      return true;
+  }
+
+  return false;
+}
+
+static bool read_ROM(uint8_t *data)
+{
+  if (data == NULL) {
+    return false;
   }
 
   write_byte(READ_ROM_COMMAND);
@@ -173,6 +170,50 @@ bool ds18b20_read_ROM(uint8_t *data)
     data[i] = read_byte();
   }
 
+  return (data[7] == CRC8(data, 7));
+}
+
+static bool match_ROM(uint8_t *ROMData)
+{
+  if (ROMData == NULL) {
+    return false;
+  }
+
+  write_byte(MATCH_ROM_COMMAND);
+
+  for (uint8_t i=0; i<8; i++)
+  {
+    write_byte(ROMData[i]);
+  }
+
+  return true;
+}
+
+static void skip_ROM(void)
+{
+  write_byte(SKIP_ROM_COMMAND);
+}
+
+void ds18b20_init(uint8_t GPIO)
+{
+    DQ_GPIO = GPIO;
+    gpio_pad_select_gpio(DQ_GPIO);
+}
+
+bool ds18b20_read_ROM(uint8_t *data)
+{
+  if (data == NULL) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (read_ROM(data) != true) {
+      return false;
+  }
+
 #if LOGGING_ENABLED
   ESP_LOGI(TAG, "Family code: %x", data[0]);
   ESP_LOGI(TAG, "Serial number: %x%x%x%x%x%x", data[1], data[2], data[3], data[4], data[5], data[6]);
@@ -180,4 +221,28 @@ bool ds18b20_read_ROM(uint8_t *data)
 #endif
 
   return (data[7] == CRC8(data, 7));
+}
+
+bool ds18b20_match_ROM(uint8_t *ROMData)
+{
+  if (ROMData == NULL) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  return match_ROM(ROMData);
+}
+
+bool ds18b20_skip_ROM(void)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  return true;
 }
