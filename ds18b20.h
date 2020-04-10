@@ -10,6 +10,6 @@
 #define DS18B20_H_INCLUDED
 
 void ds18b20_init(uint8_t GPIO);
-bool ds18b20_read_ROM(void);
+bool ds18b20_read_ROM(uint8_t *data);
 
 #endif /* DS18B20_H_INCLUDED */

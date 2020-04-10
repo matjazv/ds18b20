@@ -13,13 +13,20 @@
 #include "driver/gpio.h"
 #include "esp32/rom/ets_sys.h"
 
-#define USE_INTERRUPTS  1
+#define USE_INTERRUPTS      1
+#define LOGGING_ENABLED     1
+
+#if LOGGING_ENABLED
+#include "esp_log.h"
+#endif
 
 #define READ_ROM_COMMAND        0x33
 #define MATCH_ROM_COMMAND       0x55
 #define SKIP_ROM_COMMAND        0xCC
 #define SEARCH_ROM_COMMAND      0xF0
 #define ALARM_SEARCH_COMMAND    0xEC
+
+static const char *TAG = "ds18b20";
 
 gpio_num_t DQ_GPIO;
 
@@ -153,11 +160,26 @@ void ds18b20_init(uint8_t GPIO)
     gpio_pad_select_gpio(DQ_GPIO);
 }
 
-bool ds18b20_read_ROM(void)
+bool ds18b20_read_ROM(uint8_t *data)
 {
+  if (data == NULL) {
+      return false;
+  }
+
   initialization_sequence();
 
   write_byte(READ_ROM_COMMAND);
 
-  return true;
+  for (uint8_t i=0; i<8; i++)
+  {
+    data[i] = read_byte();
+  }
+
+#if LOGGING_ENABLED
+  ESP_LOGI(TAG, "Family code: %x", data[0]);
+  ESP_LOGI(TAG, "Serial number: %x%x%x%x%x%x", data[1], data[2], data[3], data[4], data[5], data[6]);
+  ESP_LOGI(TAG, "CRC: %x", data[7]);
+#endif
+
+  return (data[7] == CRC8(data, 7));
 }
