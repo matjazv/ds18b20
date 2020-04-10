@@ -194,6 +194,29 @@ static void skip_ROM(void)
   write_byte(SKIP_ROM_COMMAND);
 }
 
+static bool read_scratchpad(uint8_t *data)
+{
+  if (data == NULL) {
+    return false;
+  }
+
+  write_byte(READ_SCRATCHPAD_COMMAND);
+
+  for (uint8_t i=0; i<9; i++)
+  {
+    data[i] = read_byte();
+  }
+
+  return (data[8] == CRC8(data, 8));
+}
+
+static void convert_temperature(void)
+{
+  write_byte(CONVERT_TEMP_COMMAND);
+
+  vTaskDelay(750 / portTICK_RATE_MS);
+}
+
 void ds18b20_init(uint8_t GPIO)
 {
     DQ_GPIO = GPIO;
@@ -243,6 +266,66 @@ bool ds18b20_skip_ROM(void)
   }
 
   skip_ROM();
+
+  return true;
+}
+
+bool ds18b20_single_read_scratchpad(uint8_t *data)
+{
+  if (data == NULL) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (ds18b20_skip_ROM() != true) {
+    return false;
+  }
+
+  if (read_scratchpad(data) != true) {
+    return false;
+  }
+
+#if LOGGING_ENABLED
+  ESP_LOGI(TAG, "Temperature: %x%x", data[0], data[1]);
+  ESP_LOGI(TAG, "Temp. High User: %x", data[2]);
+  ESP_LOGI(TAG, "Temp. Low User: %x", data[3]);
+  ESP_LOGI(TAG, "Config: %x", data[4]);
+  ESP_LOGI(TAG, "CRC: %x", data[8]);
+#endif
+
+  return (data[8] == CRC8(data, 8));
+}
+
+bool ds18b20_single_convert_temperature(void)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (ds18b20_skip_ROM() != true) {
+    return false;
+  }
+
+  convert_temperature();
+
+  return true;
+}
+
+bool ds18b20_single_get_temperature(float *temperature)
+{
+  if (ds18b20_single_convert_temperature() != true) {
+    return false;
+  }
+
+  uint8_t scratchpadData[9];
+  if (ds18b20_single_read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  *temperature = (float)(scratchpadData[0] + (scratchpadData[1] * 256)) / 16;
 
   return true;
 }

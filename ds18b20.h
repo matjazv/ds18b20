@@ -14,4 +14,9 @@ bool ds18b20_read_ROM(uint8_t *data);
 bool ds18b20_match_ROM(uint8_t *ROMData);
 bool ds18b20_skip_ROM(void);
 
+bool ds18b20_single_read_scratchpad(uint8_t *data);
+bool ds18b20_single_convert_temperature(void);
+
+bool ds18b20_single_get_temperature(float *temperature);
+
 #endif /* DS18B20_H_INCLUDED */
