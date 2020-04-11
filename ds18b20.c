@@ -131,16 +131,6 @@ static uint8_t read_byte(void)
   return data;
 }
 
-static void reset_line(void)
-{
-  gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
-  gpio_set_level(DQ_GPIO, 0);
-
-  wait_us(480);
-
-  gpio_set_level(DQ_GPIO, 1);
-}
-
 static bool initialization_sequence(void)
 {
   gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
@@ -278,7 +268,7 @@ static bool copy_scratchpad(void)
   return false;
 }
 
-static bool convert_temperature(void)
+static bool convert_temperature(uint8_t waitTime)
 {
   write_byte(CONVERT_TEMP_COMMAND);
 
@@ -291,7 +281,8 @@ static bool convert_temperature(void)
   // 750ms for 12 bit resolution
   for (uint8_t i=0; i<10; i++)
   {
-    vTaskDelay(75 / portTICK_RATE_MS);
+    vTaskDelay(waitTime / portTICK_RATE_MS);
+
     if (read_bit() == 1) {
       return true;
     }
@@ -338,6 +329,38 @@ static bool read_power_suply(bool *parasite)
   return true;
 }
 
+static bool get_temperature_wait_time(uint8_t *waitTime)
+{
+  thermRes res;
+
+  if (ds18b20_single_get_thermometer_resolution(&res) != true) {
+    return false;
+  }
+
+  // in convert_temperature there is a for loop with 10 repetitions
+  // because of that maximum waitTime is divided by 10 and rounded up
+  switch(res)
+  {
+  case RES_9_BIT:
+    *waitTime = 10;
+  break;
+  case RES_10_BIT:
+    *waitTime = 20;
+    break;
+  case RES_11_BIT:
+    *waitTime = 40;
+    break;
+  case RES_12_BIT:
+    *waitTime = 80;
+    break;
+  default:
+    *waitTime = 80;
+    break;
+  }
+
+  return true;
+}
+
 void ds18b20_init(uint8_t GPIO)
 {
     DQ_GPIO = GPIO;
@@ -346,13 +369,19 @@ void ds18b20_init(uint8_t GPIO)
 
 bool ds18b20_single_get_temperature(float *temperature)
 {
+  uint8_t waitConversionTime;
+
+  if (get_temperature_wait_time(&waitConversionTime) != true) {
+    return false;
+  }
+
   if (initialization_sequence() != true) {
     return false;
   }
 
   skip_ROM();
 
-  if (convert_temperature() != true) {
+  if (convert_temperature(waitConversionTime) != true) {
     return false;
   }
 
@@ -380,27 +409,17 @@ bool ds18b20_single_get_thermometer_resolution(thermRes *res)
 
   skip_ROM();
 
-  if (recall_E2() != true) {
-    return false;
-  }
-
-  if (initialization_sequence() != true) {
-    return false;
-  }
-
-  skip_ROM();
-
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
     return false;
   }
 
-  *res = (scratchpadData[4] & 0x60);
+  *res = (scratchpadData[4] & 0x60) >> 5;
 
   return true;
 }
 
-bool ds18b20_single_set_thermometer_resolution(thermRes res, bool saveToEEPROM)
+bool ds18b20_single_set_thermometer_resolution(thermRes res)
 {
   if (initialization_sequence() != true) {
     return false;
@@ -417,7 +436,6 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res, bool saveToEEPROM)
   saveData[0] = scratchpadData[2];
   saveData[1] = scratchpadData[3];
   saveData[2] = res << 5;
-  ESP_LOGI(TAG, "Tempppppppppppppppp: %d", saveData[2]);
 
   if (initialization_sequence() != true) {
     return false;
@@ -429,16 +447,14 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res, bool saveToEEPROM)
     return false;
   }
 
-  if (saveToEEPROM) {
-    if (initialization_sequence() != true) {
-      return false;
-    }
+  if (initialization_sequence() != true) {
+    return false;
+  }
 
-    skip_ROM();
+  skip_ROM();
 
-    if (copy_scratchpad() != true) {
-      return false;
-    }
+  if (copy_scratchpad() != true) {
+    return false;
   }
 
   return true;
