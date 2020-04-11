@@ -20,6 +20,10 @@ typedef enum {
 
 void ds18b20_init(uint8_t GPIO);
 
+bool ds18b20_single_get_family_code(uint8_t *code);
+
+bool ds18b20_single_get_serial_number(uint8_t *serialNumber);
+
 bool ds18b20_single_get_temperature(float *temperature);
 
 bool ds18b20_single_get_thermometer_resolution(thermRes *res);

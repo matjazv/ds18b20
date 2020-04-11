@@ -367,6 +367,43 @@ void ds18b20_init(uint8_t GPIO)
     gpio_pad_select_gpio(DQ_GPIO);
 }
 
+bool ds18b20_single_get_family_code(uint8_t *code)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  uint8_t data[8];
+  if (read_ROM(data) != true) {
+    return false;
+  }
+
+  *code = data[0];
+
+  return true;
+}
+
+bool ds18b20_single_get_serial_number(uint8_t *serialNumber)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  uint8_t data[8];
+  if (read_ROM(data) != true) {
+    return false;
+  }
+
+  serialNumber[0] = data[1];
+  serialNumber[1] = data[2];
+  serialNumber[2] = data[3];
+  serialNumber[3] = data[4];
+  serialNumber[4] = data[5];
+  serialNumber[5] = data[6];
+
+  return true;
+}
+
 bool ds18b20_single_get_temperature(float *temperature)
 {
   uint8_t waitConversionTime;
