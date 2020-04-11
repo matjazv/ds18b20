@@ -469,6 +469,11 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res)
     return false;
   }
 
+  // if old resolution equals new resolution skip setting it
+  if ((scratchpadData[4] & 0x60) >> 5 == res) {
+    return true;
+  }
+
   uint8_t saveData[3];
   saveData[0] = scratchpadData[2];
   saveData[1] = scratchpadData[3];
@@ -496,3 +501,218 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res)
 
   return true;
 }
+
+#if USE_EEPROM_FOR_ALARM
+bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t temperatureLow)
+{
+  if (temperatureHigh < temperatureLow) {
+    return false;
+  }
+
+  if (temperatureHigh > 125) {
+    temperatureHigh = 125;
+  }
+
+  if (temperatureLow < -55) {
+    temperatureLow = -55;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  // if both old temperatures equal new temperatures skip setting them
+  if ((scratchpadData[2] == temperatureHigh) && (scratchpadData[3] == (uint8_t)temperatureLow)) {
+    return true;
+  }
+
+  uint8_t saveData[3];
+  saveData[0] = temperatureHigh;
+  saveData[1] = temperatureLow;
+  saveData[2] = scratchpadData[4];
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (write_scratchpad(saveData) != true) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (copy_scratchpad() != true) {
+    return false;
+  }
+
+  return true;
+}
+
+bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh)
+{
+  if (temperatureHigh > 125) {
+    temperatureHigh = 125;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  // if old high temperature equals new high temperature skip setting
+  if (scratchpadData[2] == temperatureHigh) {
+    return true;
+  }
+
+  uint8_t saveData[3];
+  saveData[0] = temperatureHigh;
+  saveData[1] = scratchpadData[3];
+  saveData[2] = scratchpadData[4];
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (write_scratchpad(saveData) != true) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (copy_scratchpad() != true) {
+    return false;
+  }
+
+  return true;
+}
+
+bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow)
+{
+  if (temperatureLow < -55) {
+    temperatureLow = -55;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  // if old low temperature equals new low temperature skip setting
+  if (scratchpadData[3] == temperatureLow) {
+    return true;
+  }
+
+  uint8_t saveData[3];
+  saveData[0] = scratchpadData[2];
+  saveData[1] = temperatureLow;
+  saveData[2] = scratchpadData[4];
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (write_scratchpad(saveData) != true) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (copy_scratchpad() != true) {
+    return false;
+  }
+
+  return true;
+}
+
+bool ds18b20_single_get_alarm_temperature(int8_t *temperatureHigh, int8_t *temperatureLow)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  *temperatureHigh = scratchpadData[2];
+  *temperatureLow = scratchpadData[3];
+
+  return true;
+}
+
+bool ds18b20_single_get_alarm_temperature_high(int8_t *temperatureHigh)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  *temperatureHigh = scratchpadData[2];
+
+  return true;
+}
+
+bool ds18b20_single_get_alarm_temperature_low(int8_t *temperatureLow)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  *temperatureLow = scratchpadData[3];
+
+  return true;
+}
+#endif
