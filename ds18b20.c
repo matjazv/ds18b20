@@ -12,6 +12,7 @@
 #include "esp_system.h"
 #include "driver/gpio.h"
 #include "esp32/rom/ets_sys.h"
+#include "ds18b20.h"
 
 #define USE_INTERRUPTS      1
 #define LOGGING_ENABLED     1
@@ -267,7 +268,8 @@ static bool copy_scratchpad(void)
   // max NV write cycle time is 10ms
   for (uint8_t i=0; i<10; i++)
   {
-    vTaskDelay(1 / portTICK_RATE_MS);
+    //vTaskDelay(1 / portTICK_RATE_MS);
+    wait_us(1000);
     if (read_bit() == 1) {
       return true;
     }
@@ -366,6 +368,78 @@ bool ds18b20_single_get_temperature(float *temperature)
   }
 
   *temperature = (float)(scratchpadData[0] + (scratchpadData[1] * 256)) / 16;
+
+  return true;
+}
+
+bool ds18b20_single_get_thermometer_resolution(thermRes *res)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (recall_E2() != true) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  *res = (scratchpadData[4] & 0x60);
+
+  return true;
+}
+
+bool ds18b20_single_set_thermometer_resolution(thermRes res, bool saveToEEPROM)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  uint8_t saveData[3];
+  saveData[0] = scratchpadData[2];
+  saveData[1] = scratchpadData[3];
+  saveData[2] = res << 5;
+  ESP_LOGI(TAG, "Tempppppppppppppppp: %d", saveData[2]);
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (write_scratchpad(saveData) != true) {
+    return false;
+  }
+
+  if (saveToEEPROM) {
+    if (initialization_sequence() != true) {
+      return false;
+    }
+
+    skip_ROM();
+
+    if (copy_scratchpad() != true) {
+      return false;
+    }
+  }
 
   return true;
 }
