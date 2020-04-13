@@ -37,6 +37,7 @@
 static const char *TAG = "ds18b20";
 
 gpio_num_t DQ_GPIO;
+bool parasitePower;
 
 static void wait_us(uint32_t us)
 {
@@ -253,16 +254,30 @@ static bool copy_scratchpad(void)
 {
   write_byte(COPY_SCRATCHPAD_COMMAND);
 
-  gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
+  if (parasitePower == false) {
+    gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
 
-  // max NV write cycle time is 10ms
-  for (uint8_t i=0; i<10; i++)
-  {
-    //vTaskDelay(1 / portTICK_RATE_MS);
-    wait_us(1000);
-    if (read_bit() == 1) {
-      return true;
+    // max NV write cycle time is 10ms
+    for (uint8_t i=0; i<10; i++)
+    {
+      //vTaskDelay(1 / portTICK_RATE_MS);
+      wait_us(1000);
+      if (read_bit() == 1) {
+        return true;
+      }
     }
+  }
+  else {
+    // in parasite mode get chip strong pullup for
+    // at least 10ms time
+    gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_level(DQ_GPIO, 1);
+
+    vTaskDelay(10 / portTICK_RATE_MS);
+
+    gpio_set_level(DQ_GPIO, 0);
+
+    return true;
   }
 
   return false;
@@ -272,20 +287,34 @@ static bool convert_temperature(uint8_t waitTime)
 {
   write_byte(CONVERT_TEMP_COMMAND);
 
-  gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
+  if (parasitePower == false) {
+    gpio_set_direction(DQ_GPIO, GPIO_MODE_INPUT);
 
-  // max temperature conversion time is:
-  // 94ms for 9 bit resolution
-  // 188ms for 10 bit resolution
-  // 375ms for 11 bit resolution
-  // 750ms for 12 bit resolution
-  for (uint8_t i=0; i<10; i++)
-  {
-    vTaskDelay(waitTime / portTICK_RATE_MS);
+    // max temperature conversion time is:
+    // 94ms for 9 bit resolution
+    // 188ms for 10 bit resolution
+    // 375ms for 11 bit resolution
+    // 750ms for 12 bit resolution
+    for (uint8_t i=0; i<10; i++)
+    {
+      vTaskDelay(waitTime / portTICK_RATE_MS);
 
-    if (read_bit() == 1) {
-      return true;
+      if (read_bit() == 1) {
+       return true;
+      }
     }
+  }
+  else {
+    // in parasite mode get chip strong pullup for
+    // at least conversion time
+    gpio_set_direction(DQ_GPIO, GPIO_MODE_OUTPUT);
+    gpio_set_level(DQ_GPIO, 1);
+
+    vTaskDelay((waitTime * 10) / portTICK_RATE_MS);
+
+    gpio_set_level(DQ_GPIO, 0);
+
+    return true;
   }
 
   return false;
@@ -361,10 +390,31 @@ static bool get_temperature_wait_time(uint8_t *waitTime)
   return true;
 }
 
-void ds18b20_init(uint8_t GPIO)
+bool ds18b20_init(uint8_t GPIO)
 {
-    DQ_GPIO = GPIO;
-    gpio_pad_select_gpio(DQ_GPIO);
+  DQ_GPIO = GPIO;
+  gpio_pad_select_gpio(DQ_GPIO);
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  skip_ROM();
+
+  if (read_power_suply(&parasitePower) != true) {
+    return false;
+  }
+
+#if LOGGING_ENABLED
+  ESP_LOGI(TAG, "Parasite power: %s", parasitePower ? "true" : "false");
+#endif
+
+  return true;
+}
+
+bool ds18b20_is_parasite_power_mode(void)
+{
+  return parasitePower;
 }
 
 bool ds18b20_single_get_family_code(uint8_t *code)

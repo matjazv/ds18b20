@@ -18,7 +18,9 @@ typedef enum {
 
 #define USE_EEPROM_FOR_ALARM  1
 
-void ds18b20_init(uint8_t GPIO);
+bool ds18b20_init(uint8_t GPIO);
+
+bool ds18b20_is_parasite_power_mode(void);
 
 bool ds18b20_single_get_family_code(uint8_t *code);
 
@@ -37,12 +39,8 @@ bool ds18b20_single_get_alarm_temperature(int8_t *temperatureHigh, int8_t *tempe
 bool ds18b20_single_get_alarm_temperature_high(int8_t *temperatureHigh);
 bool ds18b20_single_get_alarm_temperature_low(int8_t *temperatureLow);
 #else
-bool ds18b20_single_set_byte1_in_EEPROM(uint8_t byte1);
-bool ds18b20_single_set_byte2_in_EEPROM(uint8_t byte2);
-bool ds18b20_single_set_both_bytes_in_EEPROM(uint8_t byte1, uint8_t byte2);
-bool ds18b20_single_read_byte1_in_EEPROM(uint8_t *byte1);
-bool ds18b20_single_read_byte2_in_EEPROM(uint8_t *byte2);
-bool ds18b20_single_read_both_bytes_in_EEPROM(uint8_t *byte1, uint8_t *byte2);
+bool ds18b20_single_set_data_EEPROM(uint16_t data);
+bool ds18b20_single_read_data_EEPROM(uint16_t *data);
 #endif
 
 #endif /* DS18B20_H_INCLUDED */
