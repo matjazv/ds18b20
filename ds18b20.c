@@ -36,8 +36,13 @@
 
 static const char *TAG = "ds18b20";
 
-gpio_num_t DQ_GPIO;
-bool parasitePower;
+static gpio_num_t DQ_GPIO;
+static bool parasitePower;
+
+// global variables for search ROM function
+static int8_t lastMatchedBitPosition = -1;
+static bool needToWriteOne = false;
+static bool lastROMFound = false;
 
 static void wait_us(uint32_t us)
 {
@@ -111,7 +116,8 @@ static void write_byte(uint8_t data)
 {
   uint8_t bit;
 
-  for(uint8_t i=0; i<8; i++){
+  for(uint8_t i=0; i<8; i++)
+  {
     bit = data>>i;
     bit &= 0x01;
     write_bit(bit);
@@ -198,6 +204,51 @@ static bool match_ROM(uint8_t *ROMData)
 static void skip_ROM(void)
 {
   write_byte(SKIP_ROM_COMMAND);
+}
+
+static bool search_ROM(void)
+{
+  if (lastROMFound == true) {
+    return false;
+  }
+  lastROMFound = true;
+
+  write_byte(SEARCH_ROM_COMMAND);
+
+  char data[8] = {0};
+
+  for (uint8_t bitPosition=0; bitPosition<64; bitPosition++)
+  {
+    uint8_t bitValue = read_bit();
+    uint8_t complementValue = read_bit();
+
+    // no device attached to the 1-Wire bus
+    if (bitValue && complementValue) {
+      return false;
+    }
+
+    // there are still devices attached which have conflicting bits in this position
+    if (!bitValue && !complementValue && lastMatchedBitPosition <= bitPosition) {
+      lastMatchedBitPosition = bitPosition;
+      if (needToWriteOne == false) {
+          needToWriteOne = true;
+          lastROMFound = false;
+      }
+      else {
+        bitValue = 1;
+        needToWriteOne = false;
+      }
+    }
+
+    data[bitPosition / 8] |= bitValue << (bitPosition % 8);
+    write_bit(bitValue);
+  }
+
+#if LOGGING_ENABLED
+  ESP_LOGI(TAG, "Found new ROM code: %x%x%x%x%x%x%x%x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+#endif
+
+  return true;
 }
 
 static bool write_scratchpad(uint8_t *data)
@@ -415,6 +466,19 @@ bool ds18b20_init(uint8_t GPIO)
 bool ds18b20_is_parasite_power_mode(void)
 {
   return parasitePower;
+}
+
+bool ds18b20_search_ROM(void)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (search_ROM() != true) {
+    return false;
+  }
+
+  return true;
 }
 
 bool ds18b20_single_get_family_code(uint8_t *code)
