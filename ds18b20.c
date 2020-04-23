@@ -14,7 +14,6 @@
 #include "esp32/rom/ets_sys.h"
 #include "ds18b20.h"
 
-#define USE_INTERRUPTS      1
 #define LOGGING_ENABLED     1
 
 #if LOGGING_ENABLED
@@ -46,13 +45,7 @@ static bool lastROMFound = false;
 
 static void wait_us(uint32_t us)
 {
-#if USE_INTERRUPTS
-  portDISABLE_INTERRUPTS();
-#endif
   ets_delay_us(us);
-#if USE_INTERRUPTS
-  portENABLE_INTERRUPTS();
-#endif
 }
 
 static uint8_t CRC8(const uint8_t *addr, uint8_t len)
