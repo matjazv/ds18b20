@@ -31,7 +31,7 @@ else {
 }	
 ```
 
-#### Optional to set alarm temperature between -6 and 30 degrees Celsius: ####
+#### Optional to set low alarm temperature to -6°C and high alarm temerature to 30°C: ####
 
 ```
 if (ds18b20_set_alarm_temperature(30, -6, NULL) == true) {
@@ -41,7 +41,19 @@ else {
   ESP_LOGI(TAG, "Failed to set alarm temperatures!");
 }
 ```
-	
+
+#### Optional to get a low alarm temperature for a sensor: ####
+
+```
+int8_t temperatureLow;
+if (ds18b20_get_alarm_temperature_low(&temperatureLow, NULL) == true) {
+  ESP_LOGI(TAG, "Low alarm temperature: %d", temperatureLow);
+}
+else {
+  ESP_LOGI(TAG, "Failed to get a low alarm temperature!");
+}
+```
+
 #### Multiple DS18B20: ####
 
 ```
@@ -68,24 +80,33 @@ else {
 }
 ```
 
-#### Optional to set sensor resolution to 11 bit: ####
+#### Optional to set sensor resolution to 9 bit: ####
 
 ```
-if (ds18b20_set_thermometer_resolution(RES_11_BIT, address) == true) {
-  ESP_LOGI(TAG, "Successfully set temperature resolution to 11 bit.");
+if (ds18b20_set_thermometer_resolution(RES_9_BIT, address) == true) {
+  ESP_LOGI(TAG, "Successfully set temperature resolution to 9 bit.");
 }
 else {
-  ESP_LOGI(TAG, "Failed to set temperature resolution to 11 bit!");
+  ESP_LOGI(TAG, "Failed to set temperature resolution to 9 bit!");
 }	
 ```
 
-#### Optional to set alarm temperature between -6 and 30 degrees Celsius: ####
+#### Optional to set high alarm temperature to 28°C: ####
 
 ```
-if (ds18b20_set_alarm_temperature(30, -6, address) == true) {
+if (ds18b20_set_alarm_temperature_high(28, address) == true) {
   ESP_LOGI(TAG, "Successfully set alarm temperatures.");
 }
 else {
   ESP_LOGI(TAG, "Failed to set alarm temperatures!");
+}
+```
+
+#### Optional to check if any sensor has triggered a temperature alarm: ####
+
+```
+uint8_t alarmAddress[8] = {0};
+while (ds18b20_alarm_search(alarmAddress) == true) {
+  ESP_LOGI(TAG, "ALARM for address: %x%x%x%x%x%x%x%x", alarmAddress[0], alarmAddress[1], alarmAddress[2], alarmAddress[3], alarmAddress[4], alarmAddress[5], alarmAddress[6], alarmAddress[7]);
 }
 ```
