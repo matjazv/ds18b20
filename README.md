@@ -1,6 +1,6 @@
 # Library for single or multiple temperature sensor(s) DS18B20 with alarm support on ESP32
 # Usage
-In both examples sensor data pin is connected to GPIO15 on ESP32.
+In both examples sensors data pin is connected to GPIO15 on ESP32.
 
 #### Single DS18B20: ####
 
@@ -31,7 +31,7 @@ else {
 }	
 ```
 
-#### Optional to set alarm temperature between -6 and 30 celsius degrees: ####
+#### Optional to set alarm temperature between -6 and 30 degrees Celsius: ####
 
 ```
 if (ds18b20_set_alarm_temperature(30, -6, NULL) == true) {
@@ -79,7 +79,7 @@ else {
 }	
 ```
 
-#### Optional to set alarm temperature between -6 and 30 celsius degrees: ####
+#### Optional to set alarm temperature between -6 and 30 degrees Celsius: ####
 
 ```
 if (ds18b20_set_alarm_temperature(30, -6, address) == true) {
