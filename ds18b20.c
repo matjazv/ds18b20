@@ -199,14 +199,27 @@ static void skip_ROM(void)
   write_byte(SKIP_ROM_COMMAND);
 }
 
-static bool search_ROM(uint8_t *address)
+static void reset_search(void)
+{
+  lastMatchedBitPosition = -1;
+  needToWriteOne = false;
+  lastROMFound = false;
+}
+
+static bool search_ROM(bool alarmSearch, uint8_t *address)
 {
   if (lastROMFound == true) {
+    reset_search();
     return false;
   }
   lastROMFound = true;
 
-  write_byte(SEARCH_ROM_COMMAND);
+  if (!alarmSearch) {
+    write_byte(SEARCH_ROM_COMMAND);
+  }
+  else {
+    write_byte(ALARM_SEARCH_COMMAND);
+  }
 
   char data[8] = {0};
 
@@ -217,6 +230,7 @@ static bool search_ROM(uint8_t *address)
 
     // no device attached to the 1-Wire bus
     if (bitValue && complementValue) {
+      reset_search();
       return false;
     }
 
@@ -243,7 +257,12 @@ static bool search_ROM(uint8_t *address)
   }
 
 #if LOGGING_ENABLED
-  ESP_LOGI(TAG, "Found new ROM code: %x%x%x%x%x%x%x%x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+  if (!alarmSearch) {
+    ESP_LOGI(TAG, "Found new ROM code: %x%x%x%x%x%x%x%x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+  }
+  else {
+    ESP_LOGI(TAG, "Alarm for sensor with ROM code: %x%x%x%x%x%x%x%x", data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+  }
 #endif
 
   return true;
@@ -472,7 +491,20 @@ bool ds18b20_search_ROM(uint8_t *address)
     return false;
   }
 
-  if (search_ROM(address) != true) {
+  if (search_ROM(false, address) != true) {
+    return false;
+  }
+
+  return true;
+}
+
+bool ds18b20_alarm_search(uint8_t *address)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (search_ROM(true, address) != true) {
     return false;
   }
 

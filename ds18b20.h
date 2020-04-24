@@ -23,6 +23,7 @@ bool ds18b20_init(uint8_t GPIO);
 bool ds18b20_is_parasite_power_mode(void);
 
 bool ds18b20_search_ROM(uint8_t *address);
+bool ds18b20_alarm_search(uint8_t *address);
 
 bool ds18b20_single_get_family_code(uint8_t *code);
 bool ds18b20_single_get_serial_number(uint8_t *serialNumber);
