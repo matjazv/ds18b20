@@ -2,6 +2,12 @@
 # Usage
 In both examples (single and multiple) sensors data pin is connected to GPIO15 on ESP32.
 
+You may disable or enable logging in the library by setting LOGGING_ENABLED in the top of ds18b20.c file:
+```
+#define LOGGING_ENABLED     0 // logging disabled
+#define LOGGING_ENABLED     1 // logging enabled
+```
+
 #### Single DS18B20: ####
 
 ```
