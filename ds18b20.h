@@ -35,7 +35,7 @@ bool ds18b20_set_thermometer_resolution(thermRes res, uint8_t *address);
 #if USE_EEPROM_FOR_ALARM
 bool ds18b20_set_alarm_temperature(int8_t temperatureHigh, int8_t temperatureLow, uint8_t *address);
 bool ds18b20_set_alarm_temperature_high(int8_t temperatureHigh, uint8_t *address);
-bool ds18b20e_set_alarm_temperature_low(int8_t temperatureLow, uint8_t *address);
+bool ds18b20_set_alarm_temperature_low(int8_t temperatureLow, uint8_t *address);
 bool ds18b20_get_alarm_temperature(int8_t *temperatureHigh, int8_t *temperatureLow, uint8_t *address);
 bool ds18b20_get_alarm_temperature_high(int8_t *temperatureHigh, uint8_t *address);
 bool ds18b20_get_alarm_temperature_low(int8_t *temperatureLow, uint8_t *address);
