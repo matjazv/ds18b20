@@ -1,6 +1,6 @@
 # Library for single or multiple temperature sensor(s) DS18B20 with alarm support on ESP32
 # Usage
-In both examples sensors data pin is connected to GPIO15 on ESP32.
+In both examples (single and multiple) sensors data pin is connected to GPIO15 on ESP32.
 
 #### Single DS18B20: ####
 
@@ -12,8 +12,9 @@ else {
   ESP_LOGI(TAG, "Initialization failed!");
 }
 
-if (ds18b20_get_temperature(&temp, NULL) == true) {
-  ESP_LOGI(TAG, "Temperature: %0.1f", temp);
+float temperature;
+if (ds18b20_get_temperature(&temperature, NULL) == true) {
+  ESP_LOGI(TAG, "Temperature: %0.1f", temperature);
 }
 else {
   ESP_LOGI(TAG, "Error reading temperature!");
@@ -72,8 +73,9 @@ else {
   ESP_LOGI(TAG, "No address was found!");
 }
 
-if (ds18b20_get_temperature(&temp, address) == true) {
-  ESP_LOGI(TAG, "Temperature: %0.1f", temp);
+float temperature;
+if (ds18b20_get_temperature(&temperature, address) == true) {
+  ESP_LOGI(TAG, "Temperature: %0.1f", temperature);
 }
 else {
   ESP_LOGI(TAG, "Error reading temperature!");
