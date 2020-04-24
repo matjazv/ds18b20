@@ -199,7 +199,7 @@ static void skip_ROM(void)
   write_byte(SKIP_ROM_COMMAND);
 }
 
-static bool search_ROM(void)
+static bool search_ROM(uint8_t *address)
 {
   if (lastROMFound == true) {
     return false;
@@ -235,6 +235,11 @@ static bool search_ROM(void)
 
     data[bitPosition / 8] |= bitValue << (bitPosition % 8);
     write_bit(bitValue);
+  }
+
+  for (uint8_t i=0; i<8; i++)
+  {
+      address[i] = data[i];
   }
 
 #if LOGGING_ENABLED
@@ -461,13 +466,13 @@ bool ds18b20_is_parasite_power_mode(void)
   return parasitePower;
 }
 
-bool ds18b20_search_ROM(void)
+bool ds18b20_search_ROM(uint8_t *address)
 {
   if (initialization_sequence() != true) {
     return false;
   }
 
-  if (search_ROM() != true) {
+  if (search_ROM(address) != true) {
     return false;
   }
 
