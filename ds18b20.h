@@ -27,18 +27,18 @@ bool ds18b20_search_ROM(void);
 bool ds18b20_single_get_family_code(uint8_t *code);
 bool ds18b20_single_get_serial_number(uint8_t *serialNumber);
 
-bool ds18b20_single_get_temperature(float *temperature);
+bool ds18b20_get_temperature(float *temperature, uint8_t *address);
 
-bool ds18b20_single_get_thermometer_resolution(thermRes *res);
-bool ds18b20_single_set_thermometer_resolution(thermRes res);
+bool ds18b20_get_thermometer_resolution(thermRes *res, uint8_t *address);
+bool ds18b20_set_thermometer_resolution(thermRes res, uint8_t *address);
 
 #if USE_EEPROM_FOR_ALARM
-bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t temperatureLow);
-bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh);
-bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow);
-bool ds18b20_single_get_alarm_temperature(int8_t *temperatureHigh, int8_t *temperatureLow);
-bool ds18b20_single_get_alarm_temperature_high(int8_t *temperatureHigh);
-bool ds18b20_single_get_alarm_temperature_low(int8_t *temperatureLow);
+bool ds18b20_set_alarm_temperature(int8_t temperatureHigh, int8_t temperatureLow, uint8_t *address);
+bool ds18b20_set_alarm_temperature_high(int8_t temperatureHigh, uint8_t *address);
+bool ds18b20e_set_alarm_temperature_low(int8_t temperatureLow, uint8_t *address);
+bool ds18b20_get_alarm_temperature(int8_t *temperatureHigh, int8_t *temperatureLow, uint8_t *address);
+bool ds18b20_get_alarm_temperature_high(int8_t *temperatureHigh, uint8_t *address);
+bool ds18b20_get_alarm_temperature_low(int8_t *temperatureLow, uint8_t *address);
 #else
 bool ds18b20_single_set_data_EEPROM(uint16_t data);
 bool ds18b20_single_read_data_EEPROM(uint16_t *data);

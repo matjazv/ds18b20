@@ -402,11 +402,11 @@ static bool read_power_suply(bool *parasite)
   return true;
 }
 
-static bool get_temperature_wait_time(uint8_t *waitTime)
+static bool get_temperature_wait_time(uint8_t *waitTime, uint8_t *address)
 {
   thermRes res;
 
-  if (ds18b20_single_get_thermometer_resolution(&res) != true) {
+  if (ds18b20_get_thermometer_resolution(&res, address) != true) {
     return false;
   }
 
@@ -450,7 +450,7 @@ bool ds18b20_init(uint8_t GPIO)
   }
 
 #if LOGGING_ENABLED
-  ESP_LOGI(TAG, "Parasite power: %s", parasitePower ? "true" : "false");
+  ESP_LOGI(TAG, "Parasite power: %s", parasitePower ? "enabled" : "disabled");
 #endif
 
   return true;
@@ -511,11 +511,11 @@ bool ds18b20_single_get_serial_number(uint8_t *serialNumber)
   return true;
 }
 
-bool ds18b20_single_get_temperature(float *temperature)
+bool ds18b20_get_temperature(float *temperature, uint8_t *address)
 {
   uint8_t waitConversionTime;
 
-  if (get_temperature_wait_time(&waitConversionTime) != true) {
+  if (get_temperature_wait_time(&waitConversionTime, address) != true) {
     return false;
   }
 
@@ -523,7 +523,14 @@ bool ds18b20_single_get_temperature(float *temperature)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (convert_temperature(waitConversionTime) != true) {
     return false;
@@ -533,7 +540,14 @@ bool ds18b20_single_get_temperature(float *temperature)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -545,13 +559,20 @@ bool ds18b20_single_get_temperature(float *temperature)
   return true;
 }
 
-bool ds18b20_single_get_thermometer_resolution(thermRes *res)
+bool ds18b20_get_thermometer_resolution(thermRes *res, uint8_t *address)
 {
   if (initialization_sequence() != true) {
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -563,13 +584,20 @@ bool ds18b20_single_get_thermometer_resolution(thermRes *res)
   return true;
 }
 
-bool ds18b20_single_set_thermometer_resolution(thermRes res)
+bool ds18b20_set_thermometer_resolution(thermRes res, uint8_t *address)
 {
   if (initialization_sequence() != true) {
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -590,7 +618,14 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (write_scratchpad(saveData) != true) {
     return false;
@@ -600,7 +635,14 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (copy_scratchpad() != true) {
     return false;
@@ -610,7 +652,7 @@ bool ds18b20_single_set_thermometer_resolution(thermRes res)
 }
 
 #if USE_EEPROM_FOR_ALARM
-bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t temperatureLow)
+bool ds18b20_set_alarm_temperature(int8_t temperatureHigh, int8_t temperatureLow, uint8_t *address)
 {
   if (temperatureHigh < temperatureLow) {
     return false;
@@ -628,7 +670,14 @@ bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t tempera
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -649,7 +698,14 @@ bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t tempera
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (write_scratchpad(saveData) != true) {
     return false;
@@ -659,7 +715,14 @@ bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t tempera
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (copy_scratchpad() != true) {
     return false;
@@ -668,7 +731,7 @@ bool ds18b20_single_set_alarm_temperature(int8_t temperatureHigh, int8_t tempera
   return true;
 }
 
-bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh)
+bool ds18b20_set_alarm_temperature_high(int8_t temperatureHigh, uint8_t *address)
 {
   if (temperatureHigh > 125) {
     temperatureHigh = 125;
@@ -678,7 +741,14 @@ bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  };
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -699,7 +769,14 @@ bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (write_scratchpad(saveData) != true) {
     return false;
@@ -709,7 +786,14 @@ bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  };
 
   if (copy_scratchpad() != true) {
     return false;
@@ -718,7 +802,7 @@ bool ds18b20_single_set_alarm_temperature_high(int8_t temperatureHigh)
   return true;
 }
 
-bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow)
+bool ds18b20_set_alarm_temperature_low(int8_t temperatureLow, uint8_t *address)
 {
   if (temperatureLow < -55) {
     temperatureLow = -55;
@@ -728,7 +812,14 @@ bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -749,7 +840,14 @@ bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (write_scratchpad(saveData) != true) {
     return false;
@@ -759,7 +857,14 @@ bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow)
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   if (copy_scratchpad() != true) {
     return false;
@@ -768,13 +873,20 @@ bool ds18b20_single_set_alarm_temperature_low(int8_t temperatureLow)
   return true;
 }
 
-bool ds18b20_single_get_alarm_temperature(int8_t *temperatureHigh, int8_t *temperatureLow)
+bool ds18b20_get_alarm_temperature(int8_t *temperatureHigh, int8_t *temperatureLow, uint8_t *address)
 {
   if (initialization_sequence() != true) {
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -787,13 +899,20 @@ bool ds18b20_single_get_alarm_temperature(int8_t *temperatureHigh, int8_t *tempe
   return true;
 }
 
-bool ds18b20_single_get_alarm_temperature_high(int8_t *temperatureHigh)
+bool ds18b20_get_alarm_temperature_high(int8_t *temperatureHigh, uint8_t *address)
 {
   if (initialization_sequence() != true) {
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
@@ -805,13 +924,20 @@ bool ds18b20_single_get_alarm_temperature_high(int8_t *temperatureHigh)
   return true;
 }
 
-bool ds18b20_single_get_alarm_temperature_low(int8_t *temperatureLow)
+bool ds18b20_get_alarm_temperature_low(int8_t *temperatureLow, uint8_t *address)
 {
   if (initialization_sequence() != true) {
     return false;
   }
 
-  skip_ROM();
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
 
   uint8_t scratchpadData[9];
   if (read_scratchpad(scratchpadData) != true) {
