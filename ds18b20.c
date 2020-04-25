@@ -985,4 +985,99 @@ bool ds18b20_get_alarm_temperature_low(int8_t *temperatureLow, uint8_t *address)
 
   return true;
 }
+
+#else
+
+bool ds18b20_single_set_data_EEPROM(uint16_t data, uint8_t *address)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  // if old data equals new data skip rewriting it
+  if ((scratchpadData[2] == (uint8_t)(data>>8)) && (scratchpadData[3] == (uint8_t)data)) {
+    return true;
+  }
+
+  uint8_t saveData[3];
+  saveData[0] = (uint8_t)(data>>8);
+  saveData[1] = (uint8_t)data;
+  saveData[2] = scratchpadData[4];
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
+
+  if (write_scratchpad(saveData) != true) {
+    return false;
+  }
+
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
+
+  if (copy_scratchpad() != true) {
+    return false;
+  }
+
+  return true;
+}
+
+bool ds18b20_single_read_data_EEPROM(uint16_t *data, uint8_t *address)
+{
+  if (initialization_sequence() != true) {
+    return false;
+  }
+
+  if (address == NULL) {
+    skip_ROM();
+  }
+  else {
+    if (match_ROM(address) != true) {
+      return false;
+    }
+  }
+
+  uint8_t scratchpadData[9];
+  if (read_scratchpad(scratchpadData) != true) {
+    return false;
+  }
+
+  *data = ((uint16_t)scratchpadData[2]<<8) | scratchpadData[3];
+
+  return true;
+}
+
 #endif

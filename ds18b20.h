@@ -144,8 +144,25 @@ bool ds18b20_get_alarm_temperature_high(int8_t *temperatureHigh, uint8_t *addres
 bool ds18b20_get_alarm_temperature_low(int8_t *temperatureLow, uint8_t *address);
 
 #else
-bool ds18b20_single_set_data_EEPROM(uint16_t data);
-bool ds18b20_single_read_data_EEPROM(uint16_t *data);
+
+/**
+* Function writes 16 bit number to a sensors EEPROM. If user does not need
+* temperature alarm functionality, EEPROM may be used as 2 byte external storage.
+* @param data 16 bit number to be stored to an EEPROM
+* @param address if only one sensor is attached on a bus NULL parameter may be used, otherwise it is an 8 byte address of a sensor
+* @return 'true' if succeeded, 'false' otherwise
+*/
+bool ds18b20_single_set_data_EEPROM(uint16_t data, uint8_t *address);
+
+/**
+* Function reads 16 bit number from a sensors EEPROM. If user does not need
+* temperature alarm functionality, EEPROM may be used as 2 byte external storage.
+* @param data 16 bit number to be read from an EEPROM
+* @param address if only one sensor is attached on a bus NULL parameter may be used, otherwise it is an 8 byte address of a sensor
+* @return 'true' if succeeded, 'false' otherwise
+*/
+bool ds18b20_single_read_data_EEPROM(uint16_t *data, uint8_t *address);
+
 #endif
 
 #endif /* DS18B20_H_INCLUDED */
