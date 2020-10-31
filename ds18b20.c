@@ -212,7 +212,6 @@ static bool search_ROM(bool alarmSearch, uint8_t *address)
     reset_search();
     return false;
   }
-  lastROMFound = true;
 
   if (!alarmSearch) {
     write_byte(SEARCH_ROM_COMMAND);
@@ -222,6 +221,7 @@ static bool search_ROM(bool alarmSearch, uint8_t *address)
   }
 
   char data[8] = {0};
+  uint8_t lastZero = 0;
 
   for (uint8_t bitPosition=0; bitPosition<64; bitPosition++)
   {
@@ -234,17 +234,20 @@ static bool search_ROM(bool alarmSearch, uint8_t *address)
       return false;
     }
 
-    // there are still devices attached which have conflicting bits in this position
-    if (!bitValue && !complementValue && lastMatchedBitPosition <= bitPosition) {
-      lastMatchedBitPosition = bitPosition;
-      if (needToWriteOne == false) {
-          needToWriteOne = true;
-          lastROMFound = false;
-      }
-      else {
-        bitValue = 1;
-        needToWriteOne = false;
-      }
+    if (!bitValue && !complementValue) {
+        if (bitPosition == lastMatchedBitPosition) {
+            bitValue = 1;
+        } else if (bitPosition > lastMatchedBitPosition) {
+            bitValue = 0;
+            lastZero = bitPosition;
+        } else {
+            // there are still devices attached which have conflicting bits in this position
+            bitValue = (data[bitPosition / 8] << (bitPosition % 8)) & 1;
+
+            if (!bitValue) {
+                lastZero = bitPosition;
+            }
+        }
     }
 
     data[bitPosition / 8] |= bitValue << (bitPosition % 8);
@@ -254,6 +257,12 @@ static bool search_ROM(bool alarmSearch, uint8_t *address)
   for (uint8_t i=0; i<8; i++)
   {
       address[i] = data[i];
+  }
+
+  lastMatchedBitPosition = lastZero;
+
+  if (!lastMatchedBitPosition) {
+      lastROMFound = true;
   }
 
 #if LOGGING_ENABLED
