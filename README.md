@@ -64,6 +64,8 @@ else {
 #### Multiple DS18B20: ####
 
 ```
+// Suppose we have 4 sensors
+
 if (ds18b20_init(15) == true) {
   ESP_LOGI(TAG, "Initialization completed.");
 }
@@ -71,20 +73,23 @@ else {
   ESP_LOGI(TAG, "Initialization failed!");
 }
 
-uint8_t address[8] = {0};
-if (ds18b20_search_ROM(address) == true) {
-  ESP_LOGI(TAG, "Address was found.");
-}
-else {
-  ESP_LOGI(TAG, "No address was found!");
+uint8_t address[4][8] = {0};
+uint8_t numOfDevices = 0;
+
+while (ds18b20_search_ROM(address[numOfDevices]) == true) {
+  numOfDevices++;
+  ESP_LOGI(TAG, "Found address number %d.", numOfDevices);
 }
 
-float temperature;
-if (ds18b20_get_temperature(&temperature, address) == true) {
-  ESP_LOGI(TAG, "Temperature: %0.1f", temperature);
-}
-else {
-  ESP_LOGI(TAG, "Error reading temperature!");
+for (uint8_t i=0; i<numOfDevices; i++)
+{
+  float temperature;
+  if (ds18b20_get_temperature(&temperature, address[i]) == true) {
+    ESP_LOGI(TAG, "Temperature of %d. sensor: %0.1f", i, temperature);
+  }
+  else {
+    ESP_LOGI(TAG, "Error reading temperature of sensor %d!", i);
+  }
 }
 ```
 
